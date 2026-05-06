@@ -4,7 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'screens/auth/animated_auth_screen.dart';
+import 'screens/splash_screen.dart';
 
 // ─── ENUMS ────────────────────────────────────────────────────────────────────
 
@@ -284,7 +284,7 @@ mixin MapFunctions<T extends StatefulWidget> on State<T> {
   void logoutAndGoToLogin() {
     Navigator.pushAndRemoveUntil(
       mapContext,
-      MaterialPageRoute(builder: (_) => const AnimatedAuthScreen()),
+      MaterialPageRoute(builder: (_) => const SplashScreen()),
       (route) => false,
     );
   }

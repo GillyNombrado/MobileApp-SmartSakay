@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../map_function.dart';
 
 // ─── SCREEN ───────────────────────────────────────────────────────────────────
@@ -44,72 +45,56 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Plan your trip',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w800,
+            fontSize: 20,
+            color: const Color(0xFF213A58),
+            letterSpacing: -0.5,
+          ),
         ),
-        const SizedBox(height: 10),
-        TextField(
+        const SizedBox(height: 16),
+        _ModernMapField(
           controller: fromController,
-          decoration: const InputDecoration(
-            hintText: 'Your location',
-            prefixIcon: Icon(Icons.my_location, color: Colors.blue),
-            border: OutlineInputBorder(),
-          ),
+          hint: 'Your location',
+          icon: Icons.my_location,
+          iconColor: const Color(0xFF09D1C7),
         ),
-        const SizedBox(height: 8),
-        TextField(
+        const SizedBox(height: 12),
+        _ModernMapField(
           controller: toController,
-          decoration: const InputDecoration(
-            hintText: 'Destination',
-            prefixIcon: Icon(Icons.location_on, color: Colors.red),
-            border: OutlineInputBorder(),
-          ),
+          hint: 'Destination',
+          icon: Icons.location_on,
+          iconColor: Colors.redAccent,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
-              child: DropdownButtonFormField<String>(
-                initialValue: vehicle,
-                decoration: const InputDecoration(
-                  labelText: 'Transport Mode',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-                items: ['Any', 'Jeep', 'Bus', 'Tricycle']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
+              child: _ModernDropdown(
+                value: vehicle,
+                label: 'Transport Mode',
+                items: ['Any', 'Jeep', 'Bus', 'Tricycle'],
                 onChanged: (val) => setState(() => vehicle = val!),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
-              child: DropdownButtonFormField<String>(
-                initialValue: preference,
-                decoration: const InputDecoration(
-                  labelText: 'Preference',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-                items: ['Fastest', 'Cheapest']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
+              child: _ModernDropdown(
+                value: preference,
+                label: 'Preference',
+                items: ['Fastest', 'Cheapest'],
                 onChanged: (val) => setState(() => preference = val!),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton.icon(
+          height: 54,
+          child: ElevatedButton(
             onPressed: () {
               if (fromController.text.isEmpty || toController.text.isEmpty) {
                 showMapSnackBar('Please fill in both locations');
@@ -121,8 +106,29 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
               showMapSnackBar('🔍 Finding route...');
               setState(() => currentMenu = MenuType.directions);
             },
-            icon: const Icon(Icons.search),
-            label: const Text('Find Route'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF09D1C7),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 4,
+              shadowColor: const Color(0xFF09D1C7).withOpacity(0.4),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.search, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Find Route',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -208,13 +214,26 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
       (MenuType.settings, Icons.settings, 'Settings'),
     ];
 
-    return BottomNavigationBar(
-      currentIndex: MenuType.values.indexOf(currentMenu),
-      onTap: (i) => setState(() => currentMenu = MenuType.values[i]),
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: const Color(0xFF1EC6A4),
-      selectedItemColor: Colors.white,
-      unselectedItemColor: Colors.white70,
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: MenuType.values.indexOf(currentMenu),
+        onTap: (i) => setState(() => currentMenu = MenuType.values[i]),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFF213A58),
+        selectedItemColor: const Color(0xFF09D1C7),
+        unselectedItemColor: Colors.white.withOpacity(0.5),
+        selectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12),
+        unselectedLabelStyle: GoogleFonts.inter(fontSize: 12),
+        elevation: 0,
       items: items
           .map(
             (item) => BottomNavigationBarItem(
@@ -223,6 +242,7 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
             ),
           )
           .toList(),
+      ),
     );
   }
 
@@ -231,33 +251,48 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: const Color(0xFF1EC6A4),
-        elevation: 0,
-        title: const Text('Smart Sakay'),
-        actions: [
-          PopupMenuButton<MapType>(
-            icon: const Icon(Icons.layers),
-            onSelected: (type) => setState(() => currentMapType = type),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: MapType.street, child: Text('🗺️ Street')),
-              PopupMenuItem(
-                value: MapType.satellite,
-                child: Text('🛰️ Satellite'),
+      backgroundColor: Colors.white,
+      appBar: isLoading
+          ? null
+          : AppBar(
+              automaticallyImplyLeading: false,
+              title: Text(
+                'Smart Sakay',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -1,
+                ),
               ),
-              PopupMenuItem(value: MapType.terrain, child: Text('⛰️ Terrain')),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_sweep),
-            tooltip: 'Clear all',
-            onPressed: clearAll,
-          ),
-        ],
-      ),
+              backgroundColor: const Color(0xFF0C6478),
+              elevation: 0,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.layers_outlined, color: Colors.white),
+                  onPressed: () {
+                    // Toggle map type
+                    setState(() {
+                      if (currentMapType == MapType.street) {
+                        currentMapType = MapType.satellite;
+                      } else if (currentMapType == MapType.satellite) {
+                        currentMapType = MapType.terrain;
+                      } else {
+                        currentMapType = MapType.street;
+                      }
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.white),
+                  onPressed: clearAll,
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF09D1C7)),
+            )
           : Stack(
               children: [
                 // ── MAP ──────────────────────────────────────────────────────
@@ -266,12 +301,12 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
                   options: MapOptions(
                     initialCenter: currentPosition,
                     initialZoom: 15,
-                    onTap: (_, latLng) => addCustomMarker(latLng),
+                    onTap: (tapPos, point) => addCustomMarker(point),
                   ),
                   children: [
                     TileLayer(
                       urlTemplate: mapTileUrls[currentMapType]!,
-                      userAgentPackageName: 'com.example.itech106finals',
+                      userAgentPackageName: 'com.example.app',
                     ),
                     if (routePoints.isNotEmpty)
                       PolylineLayer(
@@ -433,6 +468,88 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
 
       // ── BOTTOM NAV ───────────────────────────────────────────────────────
       bottomNavigationBar: isLoading ? null : _buildBottomNav(),
+    );
+  }
+}
+
+// ─── HELPER WIDGETS ──────────────────────────────────────────────────────────
+
+class _ModernMapField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final IconData icon;
+  final Color iconColor;
+
+  const _ModernMapField({
+    required this.controller,
+    required this.hint,
+    required this.icon,
+    required this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        controller: controller,
+        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.inter(color: Colors.grey, fontSize: 15),
+          prefixIcon: Icon(icon, color: iconColor, size: 20),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModernDropdown extends StatelessWidget {
+  final String value;
+  final String label;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+
+  const _ModernDropdown({
+    required this.value,
+    required this.label,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: GoogleFonts.inter(color: Colors.grey, fontSize: 12),
+            border: InputBorder.none,
+          ),
+          items: items
+              .map((e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(
+                      e,
+                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
     );
   }
 }
