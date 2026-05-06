@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -9,7 +10,7 @@ import 'screens/login_screen.dart';
 
 enum MapType { street, satellite, terrain }
 
-enum MenuType { home, directions, terminal, landmarks, history, settings }
+enum MenuType { home, directions, settings }
 
 // ─── TILE URLs ────────────────────────────────────────────────────────────────
 
@@ -21,17 +22,20 @@ const Map<MapType, String> mapTileUrls = {
 };
 
 // ─── MAP FUNCTIONS MIXIN ──────────────────────────────────────────────────────
-// Mix this into _MapScreenState to keep map_screen.dart focused on UI only.
 
 mixin MapFunctions<T extends StatefulWidget> on State<T> {
-  // ── Controllers & state (declared here, owned by the mixin) ──
+  // ── Controllers & state ───────────────────────────────────────────────────
   final MapController mapController = MapController();
   final List<Marker> markers = [];
   final List<LatLng> routePoints = [];
 
-  LatLng currentPosition = const LatLng(14.5995, 120.9842); // Manila default
+  LatLng currentPosition = const LatLng(14.5995, 120.9842);
   bool isLoading = true;
   bool isTracking = false;
+
+  // Holds the active stream so we can cancel it when tracking is turned off.
+  StreamSubscription<Position>? _trackingSubscription;
+
   MapType currentMapType = MapType.street;
 
   // ─── PERMISSIONS & LOCATION ───────────────────────────────────────────────
@@ -68,10 +72,22 @@ mixin MapFunctions<T extends StatefulWidget> on State<T> {
     }
   }
 
-  void startLiveTracking() {
-    setState(() => isTracking = true);
+  // ── Toggle: call once to START, call again to STOP ────────────────────────
+  void toggleLiveTracking() {
+    if (isTracking) {
+      _stopLiveTracking();
+    } else {
+      _startLiveTracking();
+    }
+  }
 
-    Geolocator.getPositionStream(
+  void _startLiveTracking() {
+    setState(() {
+      isTracking = true;
+      routePoints.clear(); // fresh path each time tracking starts
+    });
+
+    _trackingSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 5, // update every 5 metres
@@ -85,6 +101,22 @@ mixin MapFunctions<T extends StatefulWidget> on State<T> {
       addUserMarker(newPos);
       animateTo(newPos);
     });
+
+    showMapSnackBar('📍 Live tracking started');
+  }
+
+  void _stopLiveTracking() {
+    _trackingSubscription?.cancel();
+    _trackingSubscription = null;
+
+    setState(() => isTracking = false);
+    showMapSnackBar('⏹️ Live tracking stopped');
+  }
+
+  // Call this in your State's dispose() to avoid memory leaks.
+  void disposeTracking() {
+    _trackingSubscription?.cancel();
+    _trackingSubscription = null;
   }
 
   // ─── MARKERS ──────────────────────────────────────────────────────────────
@@ -161,7 +193,6 @@ mixin MapFunctions<T extends StatefulWidget> on State<T> {
 
   // ─── DIALOGS & SNACKBARS ──────────────────────────────────────────────────
 
-  // Concrete subclass must provide a BuildContext — implemented via getter.
   BuildContext get mapContext => context;
 
   void showMapSnackBar(String message) {

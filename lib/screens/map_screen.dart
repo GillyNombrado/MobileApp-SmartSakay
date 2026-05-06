@@ -28,6 +28,7 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
 
   @override
   void dispose() {
+    disposeTracking(); // cancels GPS stream — prevents memory leak
     fromController.dispose();
     toController.dispose();
     super.dispose();
@@ -72,7 +73,7 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
               child: DropdownButtonFormField<String>(
                 initialValue: vehicle,
                 decoration: const InputDecoration(
-                  labelText: 'Vehicle',
+                  labelText: 'Transport Mode',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
@@ -118,7 +119,6 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
                 'Route: ${fromController.text} → ${toController.text} | $vehicle | $preference',
               );
               showMapSnackBar('🔍 Finding route...');
-              // Switch to directions after searching
               setState(() => currentMenu = MenuType.directions);
             },
             icon: const Icon(Icons.search),
@@ -156,82 +156,12 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
               title: Text('Jeep'),
             ),
             ListTile(
-              leading: CircleAvatar(child: Text('3')),
+              leading: CircleAvatar(child: Text('4')),
               title: Text('Terminal'),
             ),
           ],
         );
 
-      case MenuType.terminal:
-        return const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Terminals',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            ListTile(
-              leading: Icon(Icons.directions_bus, color: Colors.orange),
-              title: Text('SM San Pablo Terminal'),
-            ),
-            ListTile(
-              leading: Icon(Icons.directions_bus, color: Colors.orange),
-              title: Text('Central Terminal'),
-            ),
-          ],
-        );
-
-      case MenuType.landmarks:
-        return const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Landmarks',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            ListTile(
-              leading: Icon(Icons.store, color: Colors.purple),
-              title: Text('SM San Pablo'),
-            ),
-            ListTile(
-              leading: Icon(Icons.account_balance, color: Colors.purple),
-              title: Text('City Hall'),
-            ),
-            ListTile(
-              leading: Icon(Icons.shopping_basket, color: Colors.purple),
-              title: Text('Public Market'),
-            ),
-          ],
-        );
-
-      case MenuType.history:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'History',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            if (navHistory.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'No recent routes yet.',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              )
-            else
-              ...navHistory.map(
-                (e) => ListTile(
-                  leading: const Icon(Icons.history, color: Colors.grey),
-                  title: Text(e, style: const TextStyle(fontSize: 13)),
-                ),
-              ),
-          ],
-        );
       case MenuType.settings:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,13 +172,17 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
             ),
             const SizedBox(height: 8),
             ListTile(
+              leading: const Icon(Icons.history, color: Colors.grey),
+              title: const Text('History'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            ),
+            const Divider(),
+            ListTile(
               leading: const Icon(Icons.brightness_6, color: Colors.blueGrey),
               title: const Text('Dark Mode'),
               trailing: Switch(
                 value: Theme.of(context).brightness == Brightness.dark,
                 onChanged: (val) {
-                  // This is just a placeholder. Implementing theme switching
-                  // would require lifting state up to MaterialApp.
                   showMapSnackBar('Theme switching not implemented');
                 },
               ),
@@ -271,9 +205,6 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
     final items = [
       (MenuType.home, Icons.home, 'Home'),
       (MenuType.directions, Icons.directions, 'Directions'),
-      (MenuType.terminal, Icons.directions_bus, 'Terminal'),
-      (MenuType.landmarks, Icons.place, 'Landmarks'),
-      (MenuType.history, Icons.history, 'History'),
       (MenuType.settings, Icons.settings, 'Settings'),
     ];
 
@@ -286,8 +217,10 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
       unselectedItemColor: Colors.white70,
       items: items
           .map(
-            (item) =>
-                BottomNavigationBarItem(icon: Icon(item.$2), label: item.$3),
+            (item) => BottomNavigationBarItem(
+              icon: Icon(item.$2),
+              label: item.$3,
+            ),
           )
           .toList(),
     );
@@ -327,7 +260,7 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
               children: [
-                // ── MAP ──
+                // ── MAP ──────────────────────────────────────────────────────
                 FlutterMap(
                   mapController: mapController,
                   options: MapOptions(
@@ -338,7 +271,7 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
                   children: [
                     TileLayer(
                       urlTemplate: mapTileUrls[currentMapType]!,
-                      userAgentPackageName: 'com.example.app',
+                      userAgentPackageName: 'com.example.itech106finals',
                     ),
                     if (routePoints.isNotEmpty)
                       PolylineLayer(
@@ -354,7 +287,8 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
                   ],
                 ),
 
-                // ── BOTTOM SHEET PANEL (rendered before controls so it sits below them) ──
+                // ── BOTTOM SHEET ──────────────────────────────────────────────
+                // Rendered before all Positioned widgets so controls paint on top.
                 DraggableScrollableSheet(
                   initialChildSize: 0.35,
                   minChildSize: 0.12,
@@ -395,36 +329,28 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
                   ),
                 ),
 
-                // ── LIVE TRACKING BADGE (top-left, never overlaps anything) ──
-                if (isTracking)
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.gps_fixed, color: Colors.white, size: 14),
-                          SizedBox(width: 4),
-                          Text(
-                            'Live Tracking',
-                            style: TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                        ],
-                      ),
+                // ── COORDINATES (top-left, below AppBar) ─────────────────────
+                Positioned(
+                  left: 12,
+                  top: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${currentPosition.latitude.toStringAsFixed(5)},\n'
+                      '${currentPosition.longitude.toStringAsFixed(5)}',
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
                     ),
                   ),
+                ),
 
+                // ── ZOOM CONTROLS (right, middle of screen) ───────────────────
                 Positioned(
-                  right: 20,
-                  bottom: 308,
+                  right: 16,
+                  top: 140,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -443,52 +369,69 @@ class _MapScreenState extends State<MapScreen> with MapFunctions<MapScreen> {
                   ),
                 ),
 
-                // ── FABs (right side, above collapsed sheet + nav bar) ──
+                // ── TRACK + LOCATE FABs (top-right) ───────────────────────────
+                // Track FAB: green = off, red = on. Tap toggles the GPS stream.
                 Positioned(
                   right: 16,
-                  bottom: 170,
+                  top: 12,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      FloatingActionButton(
+                      FloatingActionButton.small(
                         heroTag: 'track',
-                        onPressed: isTracking ? null : startLiveTracking,
-                        backgroundColor: isTracking
-                            ? Colors.grey
-                            : Colors.green,
-                        child: const Icon(Icons.navigation),
+                        onPressed: toggleLiveTracking,
+                        backgroundColor:
+                            isTracking ? Colors.red : Colors.green,
+                        tooltip: isTracking
+                            ? 'Stop live tracking'
+                            : 'Start live tracking',
+                        child: Icon(
+                          isTracking ? Icons.gps_off : Icons.navigation,
+                          size: 20,
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      FloatingActionButton(
+                      const SizedBox(height: 8),
+                      FloatingActionButton.small(
                         heroTag: 'locate',
                         onPressed: getUserLocation,
-                        child: const Icon(Icons.my_location),
+                        child: const Icon(Icons.my_location, size: 20),
                       ),
                     ],
                   ),
                 ),
 
-                // ── COORDINATES (left side, same level as FABs) ──
-                Positioned(
-                  left: 12,
-                  bottom: 170,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${currentPosition.latitude.toStringAsFixed(5)}, '
-                      '${currentPosition.longitude.toStringAsFixed(5)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                // ── LIVE TRACKING BADGE (top-left, below coordinates) ─────────
+                // Only visible when tracking is active.
+                if (isTracking)
+                  Positioned(
+                    top: 60,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.gps_fixed, color: Colors.white, size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            'Live Tracking',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
 
-      // ── BOTTOM NAV ──
+      // ── BOTTOM NAV ───────────────────────────────────────────────────────
       bottomNavigationBar: isLoading ? null : _buildBottomNav(),
     );
   }
