@@ -1,36 +1,39 @@
 // lib/auth_service.dart
-// Temporary in-memory "database" for users
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  // Pre-seeded demo account
-  final Map<String, String> _users = {
-    'demo': 'password123',
-  };
+  final _supabase = Supabase.instance.client;
 
-  String? _loggedInUser;
-  String? get loggedInUser => _loggedInUser;
+  String? get loggedInUser => _supabase.auth.currentUser?.email;
 
   /// Returns null on success, or an error code string on failure.
-  /// Error codes: 'username_taken'
-  String? register(String username, String password) {
-    final key = username.trim().toLowerCase();
-    if (_users.containsKey(key)) return 'username_taken';
-    _users[key] = password;
-    return null;
+  Future<String?> register(String email, String password) async {
+    try {
+      await _supabase.auth.signUp(email: email, password: password);
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return e.toString();
+    }
   }
 
   /// Returns null on success, or an error code string on failure.
-  /// Error codes: 'user_not_found' | 'wrong_password'
-  String? login(String username, String password) {
-    final key = username.trim().toLowerCase();
-    if (!_users.containsKey(key)) return 'user_not_found';
-    if (_users[key] != password) return 'wrong_password';
-    _loggedInUser = key;
-    return null;
+  Future<String?> login(String email, String password) async {
+    try {
+      await _supabase.auth.signInWithPassword(email: email, password: password);
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return e.toString();
+    }
   }
 
-  void logout() => _loggedInUser = null;
+  Future<void> logout() async {
+    await _supabase.auth.signOut();
+  }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../history_manager.dart';
-import 'intro_screen.dart';
+import 'auth/animated_auth_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,7 +19,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const IntroScreen()),
+        MaterialPageRoute(builder: (_) => const AnimatedAuthScreen()),
       );
     });
   }
